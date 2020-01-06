@@ -6,13 +6,14 @@ Created on Sat Jan  4 21:25:01 2020
 """
 
 from gem import Gem
+import random
 
 class Board:
     def __init__(self, height, width):
         self.board = None
         self.__height = height
         self.__width = width
-        self.createBoard(height, width)
+        self.createBoard()
         
     @property
     def height(self):
@@ -30,8 +31,14 @@ class Board:
     def width(self, value):
         self.__width = value
         
-    def createBoard(self, height, width):
-        self.board = [[Gem(0) for i in range(height)] for i in range(width)]
+    def createBoard(self):
+        self.board = [[Gem(0) for i in range(self.__height)]
+                              for i in range(self.__width)]
+        
+    def randomizeBoard(self, id_list):
+        for row in self.board:
+            for gem in row:
+                gem.id = random.choice(id_list)
         
     def printBoard(self):
         for row in self.board:
@@ -112,15 +119,8 @@ class Board:
                     for scan_i in range(scan_size):
                         self.board[row + scan_i][column].mark = True
                         
-b = Board(5,5)
-
-b.setGem(4, 2, Gem(4))
-b.setGem(4, 4, Gem(4))
-b.setGem(3, 3, Gem(3))
-b.setGem(2, 2, Gem(2))
-b.setGem(1, 1, Gem(1))
-b.setGem(0, 0, Gem(1))
-
+b = Board(10,10)
+b.randomizeBoard([1,2,3])
 b.printBoard()
 print()
 b.markAll(3)
