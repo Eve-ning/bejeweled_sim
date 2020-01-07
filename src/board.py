@@ -36,6 +36,7 @@ class Board:
                               for i in range(self.__width)]
         
     def randomizeBoard(self, id_list):
+        random.seed(2)
         for row in self.board:
             for gem in row:
                 gem.id = random.choice(id_list)
@@ -52,10 +53,20 @@ class Board:
                 print('O' if gem.mark else 'X', end = " ")
             print(end = "\n")
 
-    def getGem(self, row, column):
-        return self.board[row][column]
-    def setGem(self, row, column, gem):
-        self.board[row][column] = gem
+    def getGem(self, row, col, clip = True):
+        if (clip):
+            row = 0 if row < 0 else row
+            row = self.__height - 1 if row >= self.__height else row
+            col = 0 if col < 0 else col
+            col = self.__width - 1 if col >= self.__width else col
+        return self.board[row][col]
+    def setGem(self, row, col, gem, clip = True):
+        if (clip):
+            row = 0 if row < 0 else row
+            row = self.__height - 1 if row >= self.__height else row
+            col = 0 if col < 0 else col
+            col = self.__width - 1 if col >= self.__width else col
+        self.board[row][col] = gem
         
     def fall(self, blank_id = 0):
         # This function makes the gems fall
@@ -65,63 +76,110 @@ class Board:
         # This is also the reason why there's [1]
         
         for i in range(self.__height): # [1]
-            for row_i in range(self.__height - 1):
-                for col_i in range(self.__width):
-                    gem_from = self.board[row_i][col_i]
-                    gem_to = self.board[row_i + 1][col_i]
+            for row in range(self.__height - 1):
+                for col in range(self.__width):
+                    gem_from = self.getGem(row, col)
+                    gem_to = self.getGem(row + 1, col)
                     if (gem_from.id != blank_id and \
                         gem_to.id == blank_id):
                         # Create new Gem
-                        self.board[row_i + 1][col_i] = \
-                            self.board[row_i][col_i]
+                        self.setGem(row + 1, col, self.getGem(row, col))
                         # Remove old Gem (create blank gem)
-                        self.board[row_i][col_i] = Gem(blank_id)
+                        self.setGem(row, col, Gem(blank_id))
         
     # Marks a specific Gem                
-    def mark(self, row, column, value = True):
-        self.board[row][column].mark = value
-
-    def markScanRight(self, row, column, scan_size):
-        mark_id = self.board[row][column].id
-        for scan_i in range(1, scan_size): 
-            # Checks if 2nd~ scan Gem matches
-            if (self.board[row][column + scan_i].id != mark_id):
-                return False
-        return True
+    def mark(self, row, col, value = True):
+        self.board[row][col].mark = value
     
-    def markScanDown(self, row, column, scan_size):
-        mark_id = self.board[row][column].id
-        for scan_i in range(1, scan_size): 
-            # Checks if 2nd~ scan Gem matches
-            if (self.board[row + scan_i][column].id != mark_id):
-                return False
-        return True
-    
-    def markAll(self, scan_size):
+    def markScan(self, scan_size):
         # Slides a nx1 scan to check if there are gems that can be marked
+        # A marked gem is part of a match
+        
+        def markScanRight(row, col, scan_size):
+            mark_id = self.board[row][col].id
+            for scan_i in range(1, scan_size): 
+                # Checks if 2nd~ scan Gem matches
+                if (self.getGem(row, col + scan_i).id != mark_id):
+                    return False
+            return True
+    
+        def markScanDown(row, col, scan_size):
+            mark_id = self.board[row][col].id
+            for scan_i in range(1, scan_size): 
+                # Checks if 2nd~ scan Gem matches
+                if (self.getGem(row + scan_i, col).id != mark_id):
+                    return False
+            return True
         
         # Slide a wide scan
         #  0 0 0
         # [0 0 0]
         #  0 0 0 
         for row in range(self.__height):
-            for column in range(self.__width - scan_size + 1):
-                if (self.markScanRight(row, column, scan_size)):
+            for col in range(self.__width - scan_size + 1):
+                if (markScanRight(row, col, scan_size)):
                     for scan_i in range(scan_size):
-                        self.board[row][column + scan_i].mark = True
+                        self.mark(row, col + scan_i)
         # Slide a tall scan
         #  0 [0] 0
         #  0 [0] 0
         #  0 [0] 0                 
         for row in range(self.__height - scan_size + 1):
-            for column in range(self.__width):
-                if (self.markScanDown(row, column, scan_size)):
+            for col in range(self.__width):
+                if (markScanDown(row, col, scan_size)):
                     for scan_i in range(scan_size):
-                        self.board[row + scan_i][column].mark = True
+                        self.mark(row + scan_i, col)
+                        
+    def markCount(self) -> list:
+        def markCountCrawl(row, col, id):
+            # This function recursively calls itself and counts how many marked
+            # and matching ids there are (up, right, down, left)
+            
+            # print(self.markCountCrawlVal)
+            # print(str(row) + ", " + str(col))
+            self.mark(row, col, False) # Unmark those that are counted
+            
+            if (self.getGem(row + 1, col).id == id and
+                self.getGem(row + 1, col).mark):
+                self.markCountCrawlVal += 1
+                markCountCrawl(row + 1, col, id)
+                
+            if (self.getGem(row, col + 1).id == id and
+                self.getGem(row, col + 1).mark):
+                self.markCountCrawlVal += 1
+                markCountCrawl(row, col + 1, id)
+                    
+            if (self.getGem(row - 1, col).id == id and
+                self.getGem(row - 1, col).mark):
+                self.markCountCrawlVal += 1
+                markCountCrawl(row - 1, col, id)
+                
+            if (self.getGem(row, col - 1).id == id and
+                self.getGem(row, col - 1).mark):
+                self.markCountCrawlVal += 1
+                markCountCrawl(row, col - 1, id)
+            return self.markCountCrawlVal
+        
+        list_out = []
+        for row in range(self.__height):
+            for col in range(self.__width):
+                if (self.getGem(row, col).mark):
+                    self.markCountCrawlVal = 1
+                    id = self.getGem(row, col).id
+                    list_out.append([id, row, col, markCountCrawl(row, col, id)])
+        
+        return list_out
+    
+    
+        
+        
+        
+                        
                         
 b = Board(10,10)
 b.randomizeBoard([1,2,3])
 b.printBoard()
 print()
-b.markAll(3)
+b.markScan(3)
 b.printMark()
+t = b.markCount()
