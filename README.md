@@ -60,6 +60,7 @@ For example, starting from the first marked gem in the example
 ```
 
 Firsltly, it will **unmark** the selected `Gem`
+
 The algorithm will crawl in 1 direction, let's say to the right.
 It will only crawl if the **ID matches** and **is marked**
 
