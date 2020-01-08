@@ -129,6 +129,7 @@ class Board:
                     for scan_i in range(scan_size):
                         self.mark(row + scan_i, col)
                         
+    # Out: [ID, X, Y, Count]
     def markCount(self) -> list:
         def markCountCrawl(row, col, id):
             # This function recursively calls itself and counts how many marked
@@ -138,37 +139,37 @@ class Board:
             
             if (self.getGem(row + 1, col).id == id and
                 self.getGem(row + 1, col).mark):
-                self.markCountCrawlVal += 1
+                self.__markCountCrawlVal += 1
                 markCountCrawl(row + 1, col, id)
                 
             if (self.getGem(row, col + 1).id == id and
                 self.getGem(row, col + 1).mark):
-                self.markCountCrawlVal += 1
+                self.__markCountCrawlVal += 1
                 markCountCrawl(row, col + 1, id)
                     
             if (self.getGem(row - 1, col).id == id and
                 self.getGem(row - 1, col).mark):
-                self.markCountCrawlVal += 1
+                self.__markCountCrawlVal += 1
                 markCountCrawl(row - 1, col, id)
                 
             if (self.getGem(row, col - 1).id == id and
                 self.getGem(row, col - 1).mark):
-                self.markCountCrawlVal += 1
+                self.__markCountCrawlVal += 1
                 markCountCrawl(row, col - 1, id)
-            return self.markCountCrawlVal
+            return self.__markCountCrawlVal
         
         list_out = []
         for row in range(self.__height):
             for col in range(self.__width):
                 if (self.getGem(row, col).mark):
-                    self.markCountCrawlVal = 1
+                    self.__markCountCrawlVal = 1
                     id = self.getGem(row, col).id
                     list_out.append([id, row, col, markCountCrawl(row, col, id)])
         
         return list_out
     
-b = Board(10,10)
-b.randomizeBoard(['+', '|', '-', ':', '*'])
+b = Board(4,4)
+b.randomizeBoard(['+', '|', '-'])
 b.printBoard()
 print()
 b.markScan(3)
