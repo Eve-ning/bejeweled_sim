@@ -36,7 +36,6 @@ class Board:
                               for i in range(self.__width)]
         
     def randomizeBoard(self, id_list):
-        random.seed(2)
         for row in self.board:
             for gem in row:
                 gem.id = random.choice(id_list)
@@ -135,8 +134,6 @@ class Board:
             # This function recursively calls itself and counts how many marked
             # and matching ids there are (up, right, down, left)
             
-            # print(self.markCountCrawlVal)
-            # print(str(row) + ", " + str(col))
             self.mark(row, col, False) # Unmark those that are counted
             
             if (self.getGem(row + 1, col).id == id and
@@ -170,14 +167,8 @@ class Board:
         
         return list_out
     
-    
-        
-        
-        
-                        
-                        
 b = Board(10,10)
-b.randomizeBoard([1,2,3])
+b.randomizeBoard(['+', '|', '-', ':', '*'])
 b.printBoard()
 print()
 b.markScan(3)
