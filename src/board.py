@@ -9,10 +9,12 @@ from gem import Gem
 import random
 
 class Board:
-    def __init__(self, height, width):
+    def __init__(self, height, width, blank_id = 0):
+        # Note that 0 != '0'
         self.board = None
         self.__height = height
         self.__width = width
+        self.__blank_id = blank_id
         self.createBoard()
         
     @property
@@ -32,8 +34,8 @@ class Board:
         self.__width = value
         
     def createBoard(self):
-        self.board = [[Gem(0) for i in range(self.__height)]
-                              for i in range(self.__width)]
+        self.board = [[Gem(self.__blank_id) for i in range(self.__height)]
+                                            for i in range(self.__width)]
         
     def randomizeBoard(self, id_list):
         for row in self.board:
@@ -67,7 +69,7 @@ class Board:
             col = self.__width - 1 if col >= self.__width else col
         self.board[row][col] = gem
         
-    def fall(self, blank_id = 0):
+    def fall(self):
         # This function makes the gems fall
         
         # The function checks every gem if there's a blank space under them
@@ -79,12 +81,12 @@ class Board:
                 for col in range(self.__width):
                     gem_from = self.getGem(row, col)
                     gem_to = self.getGem(row + 1, col)
-                    if (gem_from.id != blank_id and \
-                        gem_to.id == blank_id):
+                    if (gem_from.id != self.__blank_id and \
+                        gem_to.id == self.__blank_id):
                         # Create new Gem
                         self.setGem(row + 1, col, self.getGem(row, col))
                         # Remove old Gem (create blank gem)
-                        self.setGem(row, col, Gem(blank_id))
+                        self.setGem(row, col, Gem(self.__blank_id))
         
     # Marks a specific Gem                
     def mark(self, row, col, value = True):
@@ -111,23 +113,27 @@ class Board:
             return True
         
         # Slide a wide scan
-        #  0 0 0
-        # [0 0 0]
-        #  0 0 0 
+        #  2 1 2
+        # [1 1 1]
+        #  2 1 2 
         for row in range(self.__height):
             for col in range(self.__width - scan_size + 1):
-                if (markScanRight(row, col, scan_size)):
+                if (self.board[row][col].id != self.__blank_id and
+                    markScanRight(row, col, scan_size)):
                     for scan_i in range(scan_size):
                         self.mark(row, col + scan_i)
         # Slide a tall scan
-        #  0 [0] 0
-        #  0 [0] 0
-        #  0 [0] 0                 
+        #  2 [1] 2
+        #  1 [1] 1
+        #  2 [1] 2                 
         for row in range(self.__height - scan_size + 1):
             for col in range(self.__width):
-                if (markScanDown(row, col, scan_size)):
+                if (self.board[row][col].id != self.__blank_id and 
+                    markScanDown(row, col, scan_size)):
                     for scan_i in range(scan_size):
                         self.mark(row + scan_i, col)
+                        
+        return self.markCount()
                         
     # Out: [ID, X, Y, Count]
     def markCount(self) -> list:
@@ -168,10 +174,18 @@ class Board:
         
         return list_out
     
-b = Board(4,4)
-b.randomizeBoard(['+', '|', '-'])
-b.printBoard()
-print()
+b = Board(10,10, ' ')
+b.randomizeBoard(['+', '|', '-', ' '])
+
 b.markScan(3)
+
+b.printBoard()
 b.printMark()
-t = b.markCount()
+
+
+b.fall()
+
+t = b.markScan(3)
+
+b.printBoard()
+b.printMark()
