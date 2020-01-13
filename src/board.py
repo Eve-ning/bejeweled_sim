@@ -10,12 +10,13 @@ import random
 import copy
 
 class Board:
-    def __init__(self, height, width, blank_id = 0, DEBUG = False):
+    def __init__(self, height, width, id_list, blank_id = 0, DEBUG = False):
         # Note that 0 != '0'
         self.board = None
         self.__height = height
         self.__width = width
         self.__blank_id = blank_id
+        self.__id_list = id_list
         self.__DEBUG = DEBUG
         self.createBoard()
         
@@ -39,10 +40,10 @@ class Board:
         self.board = [[Gem(self.__blank_id) for i in range(self.__width)]
                                             for i in range(self.__height)]
         
-    def randomizeBoard(self, id_list):
+    def randomizeBoard(self):
         for row in self.board:
             for gem in row:
-                gem.id = random.choice(id_list)
+                gem.id = random.choice(self.__id_list)
         
         
     def printBoard(self):
@@ -90,25 +91,36 @@ class Board:
                         self.setGem(row + 1, col, self.getGem(row, col))
                         # Remove old Gem (create blank gem)
                         self.setGem(row, col, Gem(self.__blank_id))
-                        
-        if (self.__DEBUG): print("Fall"); self.printBoard()
         
-    def fill(self):
+    def fill_random(self):
         # This algorithm fills all blank_ids
         # Note that it's regardless of if it's after or before fall()
-        pass
+        for row in self.board:
+            for gem in row:
+                if (gem.id == self.__blank_id):
+                    gem.id = random.choice(self.__id_list)
         
     def matchAlgorithm(self, scan_size = 3):
         # This is the master algorithm on how the gems should match
         count_list = []
+        n = 1
         while (True):
             count = self.markScan(scan_size)
             if (len(count) > 0):
+                if (self.__DEBUG):
+                    print("[" + str(n) + "]")
+                    self.printBoard()
+                    print()
+                n += 1
                 self.markDestroy()
                 self.fall()
-                #self.fill
+                self.fill_random()
                 count_list.append(count)
             else:
+                if (self.__DEBUG):
+                    print("[" + str(n) + " END]")
+                    self.printBoard()
+                    print()
                 break
         return count_list
         
@@ -163,9 +175,7 @@ class Board:
                 if (self.board[row][col].id != self.__blank_id and 
                     markScanTall(row, col, scan_size)):
                     for scan_i in range(scan_size):
-                        self.mark(row + scan_i, col)
-        
-        if (self.__DEBUG): print("Mark"); self.printBoard()      
+                        self.mark(row + scan_i, col)   
         
         return self.markCount()
                         
@@ -220,10 +230,8 @@ class Board:
                 if (self.board[row][col].mark):
                     self.board[row][col].id = self.__blank_id
                     self.board[row][col].mark = False
-                    
-        if (self.__DEBUG): print("Destroy"); self.printBoard()
     
-b = Board(10,10, ' ', True)
-b.randomizeBoard(['+', '|', '-'])
+b = Board(10,10, ['+', '|', '-', '*'], ' ', True)
+b.randomizeBoard()
 
 t= b.matchAlgorithm()
