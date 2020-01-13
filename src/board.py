@@ -7,14 +7,16 @@ Created on Sat Jan  4 21:25:01 2020
 
 from gem import Gem
 import random
+import copy
 
 class Board:
-    def __init__(self, height, width, blank_id = 0):
+    def __init__(self, height, width, blank_id = 0, DEBUG = False):
         # Note that 0 != '0'
         self.board = None
         self.__height = height
         self.__width = width
         self.__blank_id = blank_id
+        self.__DEBUG = DEBUG
         self.createBoard()
         
     @property
@@ -34,25 +36,26 @@ class Board:
         self.__width = value
         
     def createBoard(self):
-        self.board = [[Gem(self.__blank_id) for i in range(self.__height)]
-                                            for i in range(self.__width)]
+        self.board = [[Gem(self.__blank_id) for i in range(self.__width)]
+                                            for i in range(self.__height)]
         
     def randomizeBoard(self, id_list):
         for row in self.board:
             for gem in row:
                 gem.id = random.choice(id_list)
         
+        
     def printBoard(self):
         for row in self.board:
             for gem in row:
                 print(gem.id, end = " ")
-            print(end = "\n")
-            
-    def printMark(self):
-        for row in self.board:
+            print("\t", end = " ")
             for gem in row:
                 print('O' if gem.mark else 'X', end = " ")
             print(end = "\n")
+
+    def getBoard(self):
+        return self.board
 
     def getGem(self, row, col, clip = True):
         if (clip):
@@ -87,28 +90,48 @@ class Board:
                         self.setGem(row + 1, col, self.getGem(row, col))
                         # Remove old Gem (create blank gem)
                         self.setGem(row, col, Gem(self.__blank_id))
+                        
+        if (self.__DEBUG): print("Fall"); self.printBoard()
+        
+    def fill(self):
+        # This algorithm fills all blank_ids
+        # Note that it's regardless of if it's after or before fall()
+        pass
+        
+    def matchAlgorithm(self, scan_size = 3):
+        # This is the master algorithm on how the gems should match
+        count_list = []
+        while (True):
+            count = self.markScan(scan_size)
+            if (len(count) > 0):
+                self.markDestroy()
+                self.fall()
+                #self.fill
+                count_list.append(count)
+            else:
+                break
+        return count_list
         
     # Marks a specific Gem                
     def mark(self, row, col, value = True):
         self.board[row][col].mark = value
     
+    def unmarkAll(self):
+        for row in self.board:
+            for gem in row:
+                gem.mark = False
+    
     def markScan(self, scan_size):
         # Slides a nx1 scan to check if there are gems that can be marked
         # A marked gem is part of a match
         
-        def markScanRight(row, col, scan_size):
+        self.unmarkAll()
+        
+        def markScanWide(row, col, scan_size):
             mark_id = self.board[row][col].id
             for scan_i in range(1, scan_size): 
                 # Checks if 2nd~ scan Gem matches
                 if (self.getGem(row, col + scan_i).id != mark_id):
-                    return False
-            return True
-    
-        def markScanDown(row, col, scan_size):
-            mark_id = self.board[row][col].id
-            for scan_i in range(1, scan_size): 
-                # Checks if 2nd~ scan Gem matches
-                if (self.getGem(row + scan_i, col).id != mark_id):
                     return False
             return True
         
@@ -119,9 +142,18 @@ class Board:
         for row in range(self.__height):
             for col in range(self.__width - scan_size + 1):
                 if (self.board[row][col].id != self.__blank_id and
-                    markScanRight(row, col, scan_size)):
+                    markScanWide(row, col, scan_size)):
                     for scan_i in range(scan_size):
                         self.mark(row, col + scan_i)
+                        
+        def markScanTall(row, col, scan_size):
+            mark_id = self.board[row][col].id
+            for scan_i in range(1, scan_size): 
+                # Checks if 2nd~ scan Gem matches
+                if (self.getGem(row + scan_i, col).id != mark_id):
+                    return False
+            return True
+
         # Slide a tall scan
         #  2 [1] 2
         #  1 [1] 1
@@ -129,14 +161,19 @@ class Board:
         for row in range(self.__height - scan_size + 1):
             for col in range(self.__width):
                 if (self.board[row][col].id != self.__blank_id and 
-                    markScanDown(row, col, scan_size)):
+                    markScanTall(row, col, scan_size)):
                     for scan_i in range(scan_size):
                         self.mark(row + scan_i, col)
-                        
+        
+        if (self.__DEBUG): print("Mark"); self.printBoard()      
+        
         return self.markCount()
                         
     # Out: [ID, X, Y, Count]
     def markCount(self) -> list:
+        # Saves current board status to reset marks on line [1]
+        board_save = copy.deepcopy(self.board) 
+        
         def markCountCrawl(row, col, id):
             # This function recursively calls itself and counts how many marked
             # and matching ids there are (up, right, down, left)
@@ -172,20 +209,21 @@ class Board:
                     id = self.getGem(row, col).id
                     list_out.append([id, row, col, markCountCrawl(row, col, id)])
         
+        self.board = board_save # [1]
+        
         return list_out
     
-b = Board(10,10, ' ')
-b.randomizeBoard(['+', '|', '-', ' '])
+    def markDestroy(self):
+        
+        for row in range(self.__height):
+            for col in range(self.__width):
+                if (self.board[row][col].mark):
+                    self.board[row][col].id = self.__blank_id
+                    self.board[row][col].mark = False
+                    
+        if (self.__DEBUG): print("Destroy"); self.printBoard()
+    
+b = Board(10,10, ' ', True)
+b.randomizeBoard(['+', '|', '-'])
 
-b.markScan(3)
-
-b.printBoard()
-b.printMark()
-
-
-b.fall()
-
-t = b.markScan(3)
-
-b.printBoard()
-b.printMark()
+t= b.matchAlgorithm()
